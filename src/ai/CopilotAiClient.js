@@ -15,9 +15,17 @@ export class CopilotAiClient extends IAIClient {
   async generateActions(input) {
     await this.#ensureSession();
 
-    const response = await this.session.sendAndWait({
-      prompt: input,
-    });
+    const timeoutMsRaw = process.env.COPILOT_TIMEOUT_MS;
+    const timeoutMs = Number.isFinite(Number(timeoutMsRaw))
+      ? Number(timeoutMsRaw)
+      : 180_000;
+
+    const response = await this.session.sendAndWait(
+      {
+        prompt: input,
+      },
+      timeoutMs,
+    );
 
     const content = response?.data?.content ?? '';
     const parsed = parseJsonFromText(content);
@@ -32,10 +40,18 @@ export class CopilotAiClient extends IAIClient {
     if (this.session) return;
 
     if (!this.client) {
-      this.client = this.sdkClient ?? new CopilotClient();
+      const githubToken =
+        process.env.COPILOT_GITHUB_TOKEN || process.env.GITHUB_TOKEN;
+
+      this.client =
+        this.sdkClient ??
+        new CopilotClient({
+          githubToken: githubToken || undefined,
+          logLevel: process.env.COPILOT_LOG_LEVEL || 'info',
+        });
     }
 
-    const model = process.env.COPILOT_MODEL || 'gpt-5';
+    const model = process.env.COPILOT_MODEL || 'gpt-4.1';
     this.session = await this.client.createSession({
       model,
       systemMessage: {
