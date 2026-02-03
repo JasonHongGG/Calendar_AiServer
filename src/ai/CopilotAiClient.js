@@ -10,6 +10,7 @@ export class CopilotAiClient extends IAIClient {
     this.systemPrompt = promptConfig.systemPrompt;
     this.client = null;
     this.session = null;
+    this.selectedModel = null;
   }
 
   async generateActions(input) {
@@ -72,7 +73,66 @@ export class CopilotAiClient extends IAIClient {
         content: this.systemPrompt,
       },
     });
+
+    this.#attachSessionModelLogging({ requestedModel: model });
+    await this.#logSelectedModelFromHistory({ requestedModel: model });
+
     // eslint-disable-next-line no-console
     console.log('[copilot] create session done');
+  }
+
+  #attachSessionModelLogging({ requestedModel }) {
+    if (!this.session) return;
+
+    // Capture what the CLI actually selected. This is the most reliable way to
+    // detect silent fallback when an unknown/unsupported model ID is requested.
+    this.session.on('session.start', (event) => {
+      const selectedModel = event?.data?.selectedModel;
+      if (selectedModel) this.selectedModel = selectedModel;
+
+      // eslint-disable-next-line no-console
+      console.log('[copilot] session.start', {
+        requestedModel,
+        selectedModel: selectedModel || null,
+      });
+    });
+
+    this.session.on('session.model_change', (event) => {
+      const newModel = event?.data?.newModel;
+      if (newModel) this.selectedModel = newModel;
+
+      // eslint-disable-next-line no-console
+      console.log('[copilot] session.model_change', {
+        previousModel: event?.data?.previousModel || null,
+        newModel: newModel || null,
+      });
+    });
+  }
+
+  async #logSelectedModelFromHistory({ requestedModel }) {
+    if (!this.session) return;
+
+    try {
+      const events = await this.session.getMessages();
+      const startEvent = Array.isArray(events)
+        ? [...events].reverse().find((e) => e?.type === 'session.start')
+        : null;
+
+      const selectedModel = startEvent?.data?.selectedModel;
+      if (selectedModel) this.selectedModel = selectedModel;
+
+      // eslint-disable-next-line no-console
+      console.log('[copilot] session.selectedModel', {
+        requestedModel,
+        selectedModel: selectedModel || null,
+        effectiveModel: this.selectedModel || requestedModel,
+        matched: Boolean(selectedModel && selectedModel === requestedModel),
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[copilot] session.selectedModel read failed', {
+        message: error?.message || String(error),
+      });
+    }
   }
 }
