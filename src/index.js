@@ -54,6 +54,10 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+app.get('/test', (_req, res) => {
+  res.status(200).json({ status: 'test success' });
+});
+
 app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`AI server listening on port ${port}`);
