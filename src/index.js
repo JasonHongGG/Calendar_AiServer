@@ -3,6 +3,24 @@ import express from 'express';
 import cors from 'cors';
 import { handleCommand } from './handlers/commandHandler.js';
 
+process.on('uncaughtException', (error) => {
+  // Copilot CLI transport can occasionally drop; avoid hard-crashing on known transient stream errors.
+  if (error?.code === 'ERR_STREAM_DESTROYED') {
+    // eslint-disable-next-line no-console
+    console.error('Uncaught exception (ignored):', error);
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.error('Uncaught exception (fatal):', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  // eslint-disable-next-line no-console
+  console.error('Unhandled rejection:', reason);
+});
+
 const app = express();
 const port = process.env.PORT || 3000;
 

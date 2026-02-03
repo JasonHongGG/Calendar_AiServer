@@ -1,5 +1,5 @@
 services:
-  ai-server:
+  calendar-ai-server:
     build:
       context: .
       dockerfile: Dockerfile

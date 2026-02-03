@@ -11,6 +11,9 @@ COPY package.json ./
 # (this repo currently may not include package-lock.json)
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
+# Copilot SDK spawns the Copilot CLI. Install it inside the image so /command works in containers.
+RUN npm install -g @github/copilot
+
 # Copy source
 COPY src ./src
 
