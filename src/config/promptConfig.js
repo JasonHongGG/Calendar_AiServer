@@ -84,6 +84,11 @@ TOOL CATALOG
   TOOL_RESULTS: <json>
   USER_INPUT: <text>
   Use tool results to finalize actions and avoid requesting tools again when sufficient.
+
+  INPUT CONTEXT
+  User input may include a line: "LOCAL_DATE: YYYY-MM-DD".
+  Use LOCAL_DATE to resolve relative dates like today/明天/昨天 when forming tool_request args.
+  If LOCAL_DATE is missing and the user uses relative dates, ask a short clarification question instead of guessing.
    args:
    {
      "query": string,
