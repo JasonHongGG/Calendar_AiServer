@@ -40,13 +40,23 @@ app.use((req, res, next) => {
 });
 
 app.post('/command', async (req, res) => {
+  const requestId = Math.random().toString(36).slice(2, 10);
+  // eslint-disable-next-line no-console
+  console.log(`[${requestId}] POST /command start`, {
+    hasInput: Boolean(req?.body?.input),
+    inputLength: req?.body?.input?.length ?? 0,
+  });
   try {
     const result = await handleCommand(req.body);
+    // eslint-disable-next-line no-console
+    console.log(`[${requestId}] POST /command success`);
     res.status(200).json(result);
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('POST /command failed:', error);
-    res.status(500).json({ message: error?.message || 'AI command failed' });
+    console.error(`[${requestId}] POST /command failed:`, error);
+    const message = error?.message || 'AI command failed';
+    const statusCode = message.includes('timed out') ? 504 : 500;
+    res.status(statusCode).json({ message });
   }
 });
 

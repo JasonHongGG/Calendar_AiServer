@@ -1,5 +1,18 @@
 import { createAiClient } from '../ai/AiClientFactory.js';
 
+function withTimeout(promise, timeoutMs) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`AI request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 export async function handleCommand(body) {
   const input = body?.input?.trim();
   if (!input) {
@@ -7,7 +20,11 @@ export async function handleCommand(body) {
   }
 
   const client = createAiClient({ provider: process.env.AI_PROVIDER });
-  const response = await client.generateActions(input);
+  const timeoutMsRaw = process.env.COPILOT_TIMEOUT_MS;
+  const timeoutMs = Number.isFinite(Number(timeoutMsRaw))
+    ? Number(timeoutMsRaw)
+    : 180_000;
+  const response = await withTimeout(client.generateActions(input), timeoutMs);
   const actions = Array.isArray(response.actions) ? response.actions : [];
 
   return {

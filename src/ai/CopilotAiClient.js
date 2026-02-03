@@ -13,6 +13,8 @@ export class CopilotAiClient extends IAIClient {
   }
 
   async generateActions(input) {
+    // eslint-disable-next-line no-console
+    console.log('[copilot] generateActions start');
     await this.#ensureSession();
 
     const timeoutMsRaw = process.env.COPILOT_TIMEOUT_MS;
@@ -20,12 +22,16 @@ export class CopilotAiClient extends IAIClient {
       ? Number(timeoutMsRaw)
       : 180_000;
 
+    // eslint-disable-next-line no-console
+    console.log('[copilot] sendAndWait start', { timeoutMs });
     const response = await this.session.sendAndWait(
       {
         prompt: input,
       },
       timeoutMs,
     );
+    // eslint-disable-next-line no-console
+    console.log('[copilot] sendAndWait done');
 
     const content = response?.data?.content ?? '';
     const parsed = parseJsonFromText(content);
@@ -33,6 +39,7 @@ export class CopilotAiClient extends IAIClient {
       throw new Error('Invalid AI response format');
     }
 
+    console.log('[copilot] generateActions done');
     return parsed;
   }
 
@@ -43,6 +50,10 @@ export class CopilotAiClient extends IAIClient {
       const githubToken =
         process.env.COPILOT_GITHUB_TOKEN || process.env.GITHUB_TOKEN;
 
+      // eslint-disable-next-line no-console
+      console.log('[copilot] create client', {
+        hasGithubToken: Boolean(githubToken),
+      });
       this.client =
         this.sdkClient ??
         new CopilotClient({
@@ -52,6 +63,8 @@ export class CopilotAiClient extends IAIClient {
     }
 
     const model = process.env.COPILOT_MODEL || 'gpt-4.1';
+    // eslint-disable-next-line no-console
+    console.log('[copilot] create session start', { model });
     this.session = await this.client.createSession({
       model,
       systemMessage: {
@@ -59,5 +72,7 @@ export class CopilotAiClient extends IAIClient {
         content: this.systemPrompt,
       },
     });
+    // eslint-disable-next-line no-console
+    console.log('[copilot] create session done');
   }
 }
