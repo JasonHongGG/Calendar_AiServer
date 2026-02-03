@@ -15,6 +15,7 @@ function withTimeout(promise, timeoutMs) {
 
 export async function handleCommand(body) {
   const input = body?.input?.trim();
+  const toolResults = Array.isArray(body?.toolResults) ? body.toolResults : [];
   if (!input) {
     return { actions: [], message: '請提供指令內容' };
   }
@@ -24,7 +25,10 @@ export async function handleCommand(body) {
   const timeoutMs = Number.isFinite(Number(timeoutMsRaw))
     ? Number(timeoutMsRaw)
     : 180_000;
-  const response = await withTimeout(client.generateActions(input), timeoutMs);
+  const response = await withTimeout(
+    client.generateActions(input, toolResults),
+    timeoutMs,
+  );
   const actions = Array.isArray(response.actions) ? response.actions : [];
 
   return {

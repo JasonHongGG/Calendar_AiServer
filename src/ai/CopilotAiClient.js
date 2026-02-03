@@ -13,7 +13,7 @@ export class CopilotAiClient extends IAIClient {
     this.selectedModel = null;
   }
 
-  async generateActions(input) {
+  async generateActions(input, toolResults) {
     // eslint-disable-next-line no-console
     console.log('[copilot] generateActions start');
     await this.#ensureSession();
@@ -25,9 +25,13 @@ export class CopilotAiClient extends IAIClient {
 
     // eslint-disable-next-line no-console
     console.log('[copilot] sendAndWait start', { timeoutMs });
+    const prompt = toolResults && toolResults.length
+      ? `TOOL_RESULTS:\n${JSON.stringify(toolResults)}\n\nUSER_INPUT:\n${input}`
+      : input;
+
     const response = await this.session.sendAndWait(
       {
-        prompt: input,
+        prompt,
       },
       timeoutMs,
     );
