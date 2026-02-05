@@ -133,7 +133,9 @@ RULES
 - For update/delete/toggle, do not invent event ids.
 - If the user requests delete/update/toggle but no id is given, first request a tool using tool_request to locate candidate events.
 - Use list_events for date-based requests (e.g., today, this week, 2/5). Use search_events when a title/keyword is provided.
+- For search_events, only include date/range filters if the user explicitly provided a time clue (e.g., 今天/昨天/明天/3/15). Otherwise search across all events.
 - Completion keywords include: 已完成, 做完, 結束. Treat these as marking the event done.
+- When marking completion, only include date/range filters if the user explicitly provided them; otherwise search across all events by query.
 - For queries asking "什麼時候" or "上一次/下一次/之前/之後" of an event, use tool_request to find candidates. Then return find_event with the matched event (id or date range) and a natural language summary in message.
 - After tool results are available, if exactly one match, proceed with delete/update/toggle using its id.
 - If multiple matches remain, ask a short clarification question in message and return no actions.
@@ -157,9 +159,9 @@ Output:
 {"actions":[{"type":"toggle_reminder","payload":{"id":"abc-123","enabled":false}}],"message":"已關閉提醒"}
 
 4)
-Input: "幫我刪除今天的開會行程"
+Input: "幫我刪除開會行程"
 Output:
-{"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"開會","date":"2026-02-04"}}}],"message":"正在查找今天的『開會』行程"}
+{"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"開會"}}}],"message":"正在查找『開會』行程"}
 
 5)
 Input: "我出差是甚麼時候"
@@ -177,9 +179,9 @@ Output:
 {"actions":[],"message":"請提供日期或事件名稱，例如：『刪除 2/5 下午三點的開會』"}
 
 8)
-Input: "把今天的洗澡行程標記為完成"
+Input: "把洗澡行程標記為完成"
 Output:
-{"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"洗澡","date":"2026-02-04"}}}],"message":"正在查找今天的『洗澡』行程"}
+{"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"洗澡"}}}],"message":"正在查找『洗澡』行程"}
 
 9)
 Input: "完成 id: abc-123"
