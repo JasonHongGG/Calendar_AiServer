@@ -15,7 +15,7 @@ Schema:
 {
   "actions": [
     {
-      "type": "add_event|update_event|delete_event|toggle_reminder|tool_request|find_event",
+      "type": "add_event|update_event|delete_event|toggle_reminder|toggle_complete|tool_request|find_event",
       "payload": { ... }
     }
   ],
@@ -31,6 +31,7 @@ ACTION TYPES & PAYLOADS
      "endDate": ISO 8601 string,
      "isAllDay": boolean,
      "colorKey": string,
+     "isCompleted"?: boolean,
      "description"?: string (備註；非必要時不需填寫),
      "reminderEnabled"?: boolean,
      "reminderTime"?: ISO 8601 string
@@ -45,6 +46,7 @@ ACTION TYPES & PAYLOADS
      "endDate"?: ISO 8601 string,
      "isAllDay"?: boolean,
      "colorKey"?: string,
+     "isCompleted"?: boolean,
      "description"?: string (備註；非必要時不需填寫),
      "reminderEnabled"?: boolean,
      "reminderTime"?: ISO 8601 string | null
@@ -62,14 +64,21 @@ ACTION TYPES & PAYLOADS
      "reminderTime"?: ISO 8601 string
    }
 
-5) tool_request
+5) toggle_complete
+   payload:
+   {
+     "id": string,
+     "isCompleted": boolean
+   }
+
+6) tool_request
    payload:
    {
      "tool": "list_events|search_events",
      "args": { ... }
    }
 
-6) find_event
+7) find_event
    payload:
    {
      "id"?: string,
@@ -120,9 +129,11 @@ RULES
 - If reminderTime is provided, do not auto-enable unless reminderEnabled is true.
 - Use update_event when updating event details and reminder params together.
 - Use toggle_reminder when only changing reminder-related params (enabled/reminderTime).
+- Use toggle_complete when only marking completion status.
 - For update/delete/toggle, do not invent event ids.
 - If the user requests delete/update/toggle but no id is given, first request a tool using tool_request to locate candidate events.
 - Use list_events for date-based requests (e.g., today, this week, 2/5). Use search_events when a title/keyword is provided.
+- Completion keywords include: 已完成, 做完, 結束. Treat these as marking the event done.
 - For queries asking "什麼時候" or "上一次/下一次/之前/之後" of an event, use tool_request to find candidates. Then return find_event with the matched event (id or date range) and a natural language summary in message.
 - After tool results are available, if exactly one match, proceed with delete/update/toggle using its id.
 - If multiple matches remain, ask a short clarification question in message and return no actions.
@@ -160,9 +171,19 @@ Input: "上一次開會是甚麼時候"
 Output:
 {"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"開會"}}}],"message":"正在查找最近一次的『開會』行程"}
 
-5)
+7)
 Input: "幫我刪除某一個的行程"
 Output:
 {"actions":[],"message":"請提供日期或事件名稱，例如：『刪除 2/5 下午三點的開會』"}
+
+8)
+Input: "把今天的洗澡行程標記為完成"
+Output:
+{"actions":[{"type":"tool_request","payload":{"tool":"search_events","args":{"query":"洗澡","date":"2026-02-04"}}}],"message":"正在查找今天的『洗澡』行程"}
+
+9)
+Input: "完成 id: abc-123"
+Output:
+{"actions":[{"type":"toggle_complete","payload":{"id":"abc-123","isCompleted":true}}],"message":"已標記為完成"}
 `,
 };
